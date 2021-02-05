@@ -30,23 +30,57 @@ colnames(zip_geo_oh) <- c("zip","aff_geo_id","geo_id","a_land","a_water","geomet
 covid_and_geo <- geo_join(zip_geo_oh,covid_data_by_zip_greater_cle,'zip','zip', how="inner")
 # ----------------------
 
-# ----------- MONITOR LOCATION DATA -----------
+# ----------- CLEVELAND MONITOR LOCATION DATA -----------
+CLE_VALUES = c("Does not Measure PM2.5","Measures PM2.5")
+CLE_VALUES_COLORS = c("Black","Blue")
+
 CDPH_AQ_monitor_locations <- read_excel("CDPH-AQ Monitor Locations.xlsx", 
                                         skip = 2)
 
 colnames(CDPH_AQ_monitor_locations) <- c("name","addresses", "pm_10","air_toxic","metals","pm_2_5","pm_2_5_s","s_02","O_zone","CO","Nox","PM")
 
-addresses <- tibble(singlelineaddress = CDPH_AQ_monitor_locations$addresses)
-address_and_latlong <- addresses %>% geocode(address = singlelineaddress, method = 'cascade', verbose=TRUE)
+cle_addresses <- tibble(singlelineaddress = CDPH_AQ_monitor_locations$addresses)
+cle_address_and_latlong <- cle_addresses %>% geocode(address = singlelineaddress, method = 'cascade', verbose=TRUE)
 
-CDPH_AQ_monitor_locations$lat <- address_and_latlong$lat
-CDPH_AQ_monitor_locations$long <- address_and_latlong$long
+CDPH_AQ_monitor_locations$lat <- cle_address_and_latlong$lat
+CDPH_AQ_monitor_locations$long <- cle_address_and_latlong$long
 # ----------------------
+
+# ----------- OUR MONITOR LOCATION DATA (POSSIBLE) -----------
+OUR_VALUES = c("CWRU","CSU","DigitalC","Great Lakes Science Center","CDPH-DAQ","County Library", "Cleveland Public Library")
+OUR_VALUES_COLORS = c("deeppink","darkviolet","chartreuse","darkgreen","yellow","chocolate","cyan")
+
+sensor_deployment_potential_sites <- read_csv("Sensor Deployment - Potential Sites - 011421 v2 - Sheet1.csv", 
+                                                               skip = 1)
+colnames(sensor_deployment_potential_sites) <- c("num","name","zip","addresses","selected","links")
+sensor_deployment_potential_sites$addresses <- paste(sensor_deployment_potential_sites$addresses, ", ", sensor_deployment_potential_sites$zip)
+
+our_addresses <- tibble(singlelineaddress = sensor_deployment_potential_sites$addresses)
+our_address_and_latlong <- our_addresses %>% geocode(address = singlelineaddress, method = 'cascade', verbose=TRUE)
+color_vec = vector("character", dim(sensor_deployment_potential_sites)[1])
+  
+for(i in 1:dim(sensor_deployment_potential_sites)[1]) {
+  for(j in 1:length(OUR_VALUES)) {
+    if (grepl(OUR_VALUES[j],sensor_deployment_potential_sites[i,]$name, fixed=TRUE)) {
+      color_vec[i] = OUR_VALUES_COLORS[j]
+    }
+  }
+}
+
+sensor_deployment_potential_sites$color <- color_vec
+sensor_deployment_potential_sites$lat <- our_address_and_latlong$lat
+sensor_deployment_potential_sites$long <- our_address_and_latlong$long
+# ----------------------
+
+# ---------------------------------------
+# ----------- GRAPH VARIABLES -----------
+# ---------------------------------------
 
 GRAPH_LAYERS = c("Covid Data","Cleveland Sensors","Our Sensors")
 
 covid_pal <- colorNumeric("Reds", covid_and_geo$cc_100_cum)
-monitor_pal <- colorFactor(c("Black","Blue"), c("Does not Measure PM2.5","Measures PM2.5"))
+cle_monitor_pal <- colorFactor(CLE_VALUES_COLORS, CLE_VALUES, ordered=T)
+our_monitor_pal <- colorFactor(OUR_VALUES_COLORS, OUR_VALUES, ordered=T)
 
 popup <- paste0("zip: ", as.character(covid_and_geo$zip), "; value: ", as.character(covid_and_geo$cc_100_cum))
 
@@ -68,18 +102,32 @@ leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
             group = GRAPH_LAYERS[1]) %>%
   
   # Cleveland Sensors
-  addLegend(pal=monitor_pal,
-            values = c("Does not Measure PM2.5","Measures PM2.5"),
+  addLegend(pal=cle_monitor_pal,
+            values = CLE_VALUES,
             position = "bottomleft",
             title = "Monitor Type:",
             group = GRAPH_LAYERS[2]) %>%
   addCircleMarkers(lng=CDPH_AQ_monitor_locations$long, 
                    lat=CDPH_AQ_monitor_locations$lat, 
                    popup = as.character(CDPH_AQ_monitor_locations$name), 
-                   radius = 1, 
-                   color = ifelse(!is.na(CDPH_AQ_monitor_locations$pm_2_5) | !is.na(CDPH_AQ_monitor_locations$pm_2_5_s),'blue','black'), 
+                   radius = 0.5, 
+                   color = ifelse(!is.na(CDPH_AQ_monitor_locations$pm_2_5) | !is.na(CDPH_AQ_monitor_locations$pm_2_5_s),CLE_VALUES_COLORS[2],CLE_VALUES_COLORS[1]), 
                    opacity=0.9,
                    group = GRAPH_LAYERS[2]) %>%
+  
+  # Our Potential Sensors
+  addLegend(pal=our_monitor_pal,
+            values = OUR_VALUES,
+            position = "bottomleft",
+            title = "Organization:",
+            group = GRAPH_LAYERS[3]) %>%
+  addCircleMarkers(lng=sensor_deployment_potential_sites$long, 
+                   lat=sensor_deployment_potential_sites$lat, 
+                   popup = as.character(sensor_deployment_potential_sites$name), 
+                   radius = 0.5, 
+                   color = sensor_deployment_potential_sites$color, 
+                   opacity=0.9,
+                   group = GRAPH_LAYERS[3]) %>%
   
   # Scale
   addScaleBar(position = "topright") %>%
