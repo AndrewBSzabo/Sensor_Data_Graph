@@ -48,7 +48,7 @@ CDPH_AQ_monitor_locations$long <- cle_address_and_latlong$long
 
 # ----------- OUR MONITOR LOCATION DATA (POSSIBLE) -----------
 OUR_VALUES = c("CWRU","CSU","DigitalC","Great Lakes Science Center","CDPH-DAQ","County Library", "Cleveland Public Library")
-OUR_VALUES_COLORS = c("deeppink","darkviolet","chartreuse","darkgreen","yellow","chocolate","cyan")
+OUR_VALUES_COLORS = c("deeppink","darkviolet","chartreuse","darkgreen","yellow","darkcyan","cyan")
 
 sensor_deployment_potential_sites <- read_csv("Sensor Deployment - Potential Sites - 011421 v2 - Sheet1.csv", 
                                                                skip = 1)
@@ -109,7 +109,7 @@ leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
             group = GRAPH_LAYERS[2]) %>%
   addCircleMarkers(lng=CDPH_AQ_monitor_locations$long, 
                    lat=CDPH_AQ_monitor_locations$lat, 
-                   popup = as.character(CDPH_AQ_monitor_locations$name), 
+                   popup = paste(as.character(CDPH_AQ_monitor_locations$name), ", ", as.character(CDPH_AQ_monitor_locations$addresses)), 
                    radius = 0.5, 
                    color = ifelse(!is.na(CDPH_AQ_monitor_locations$pm_2_5) | !is.na(CDPH_AQ_monitor_locations$pm_2_5_s),CLE_VALUES_COLORS[2],CLE_VALUES_COLORS[1]), 
                    opacity=0.9,
@@ -123,7 +123,7 @@ leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
             group = GRAPH_LAYERS[3]) %>%
   addCircleMarkers(lng=sensor_deployment_potential_sites$long, 
                    lat=sensor_deployment_potential_sites$lat, 
-                   popup = as.character(sensor_deployment_potential_sites$name), 
+                   popup = paste(as.character(sensor_deployment_potential_sites$name), ", ", as.character(sensor_deployment_potential_sites$addresses)), 
                    radius = 0.5, 
                    color = sensor_deployment_potential_sites$color, 
                    opacity=0.9,
