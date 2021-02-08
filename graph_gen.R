@@ -84,7 +84,7 @@ our_monitor_pal <- colorFactor(OUR_VALUES_COLORS, OUR_VALUES, ordered=T)
 
 popup <- paste0("zip: ", as.character(covid_and_geo$zip), "; value: ", as.character(covid_and_geo$cc_100_cum))
 
-leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
+leaflet() %>%
   addProviderTiles("CartoDB.Positron") %>%
   
   # Covid Data
@@ -97,7 +97,7 @@ leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
               group = GRAPH_LAYERS[1]) %>%
   addLegend(pal = covid_pal, 
             values = covid_and_geo$cc_100_cum, 
-            position = "topleft", 
+            position = "topright", 
             title = "Covid Case Per 100K - Cumulative:",
             group = GRAPH_LAYERS[1]) %>%
   
@@ -130,7 +130,7 @@ leaflet(options = leafletOptions(zoomControl = FALSE)) %>%
                    group = GRAPH_LAYERS[3]) %>%
   
   # Scale
-  addScaleBar(position = "topright") %>%
+  addScaleBar(position = "topleft") %>%
   
   # Layer Control
   addLayersControl(
