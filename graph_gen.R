@@ -32,7 +32,7 @@ covid_and_geo <- geo_join(zip_geo_oh,covid_data_by_zip_greater_cle,'zip','zip', 
 
 # ----------- CLEVELAND MONITOR LOCATION DATA -----------
 CLE_VALUES = c("Does not Measure PM2.5","Measures PM2.5")
-CLE_VALUES_COLORS = c("Black","Blue")
+CLE_VALUES_COLORS = c("black","blue")
 
 CDPH_AQ_monitor_locations <- read_excel("CDPH-AQ Monitor Locations.xlsx", 
                                         skip = 2)
@@ -47,8 +47,8 @@ CDPH_AQ_monitor_locations$long <- cle_address_and_latlong$long
 # ----------------------
 
 # ----------- OUR MONITOR LOCATION DATA (POSSIBLE) -----------
-OUR_VALUES = c("CWRU","CSU","DigitalC","Great Lakes Science Center","CDPH-DAQ","County Library", "Cleveland Public Library")
-OUR_VALUES_COLORS = c("deeppink","darkviolet","chartreuse","darkgreen","yellow","darkcyan","cyan")
+POTENTIAL = c("County Library", "Cleveland Public Library")
+POTENTIAL_COLORS = c("darkcyan","cyan")
 
 sensor_deployment_potential_sites <- read_csv("Sensor Deployment - Potential Sites - 011421 v2 - Sheet1.csv", 
                                                                skip = 1)
@@ -57,12 +57,17 @@ sensor_deployment_potential_sites$addresses <- paste(sensor_deployment_potential
 
 our_addresses <- tibble(singlelineaddress = sensor_deployment_potential_sites$addresses)
 our_address_and_latlong <- our_addresses %>% geocode(address = singlelineaddress, method = 'cascade', verbose=TRUE)
+
+
 color_vec = vector("character", dim(sensor_deployment_potential_sites)[1])
   
 for(i in 1:dim(sensor_deployment_potential_sites)[1]) {
-  for(j in 1:length(OUR_VALUES)) {
-    if (grepl(OUR_VALUES[j],sensor_deployment_potential_sites[i,]$name, fixed=TRUE)) {
-      color_vec[i] = OUR_VALUES_COLORS[j]
+  for(j in 1:length(POTENTIAL)) {
+    if (sensor_deployment_potential_sites[i,]$selected == TRUE) {
+      color_vec[i] = 'yellow'
+    }
+    else if (grepl(POTENTIAL[j],sensor_deployment_potential_sites[i,]$name, fixed=TRUE)) {
+      color_vec[i] = POTENTIAL_COLORS[j]
     }
   }
 }
@@ -70,17 +75,20 @@ for(i in 1:dim(sensor_deployment_potential_sites)[1]) {
 sensor_deployment_potential_sites$color <- color_vec
 sensor_deployment_potential_sites$lat <- our_address_and_latlong$lat
 sensor_deployment_potential_sites$long <- our_address_and_latlong$long
+
+IOTC_sensors <- subset(sensor_deployment_potential_sites,color=='yellow')
+potential_CCPL <- subset(sensor_deployment_potential_sites,color==POTENTIAL_COLORS[1])
+potential_CPL <- subset(sensor_deployment_potential_sites,color==POTENTIAL_COLORS[2])
 # ----------------------
 
 # ---------------------------------------
 # ----------- GRAPH VARIABLES -----------
 # ---------------------------------------
 
-GRAPH_LAYERS = c("Covid Data","Cleveland Sensors","Our Sensors")
+GRAPH_LAYERS = c("Covid Data","CDPH-DAQ Monitoring","IOTC Sensors", "Potential CPL", "Potential CCPL")
 
 covid_pal <- colorNumeric("Reds", covid_and_geo$cc_100_cum)
 cle_monitor_pal <- colorFactor(CLE_VALUES_COLORS, CLE_VALUES, ordered=T)
-our_monitor_pal <- colorFactor(OUR_VALUES_COLORS, OUR_VALUES, ordered=T)
 
 popup <- paste0("zip: ", as.character(covid_and_geo$zip), "; value: ", as.character(covid_and_geo$cc_100_cum))
 
@@ -105,29 +113,47 @@ leaflet() %>%
   addLegend(pal=cle_monitor_pal,
             values = CLE_VALUES,
             position = "bottomleft",
-            title = "Monitor Type:",
+            title = "CDPH-DAQ Monitor Type:",
             group = GRAPH_LAYERS[2]) %>%
-  addCircleMarkers(lng=CDPH_AQ_monitor_locations$long, 
-                   lat=CDPH_AQ_monitor_locations$lat, 
-                   popup = paste(as.character(CDPH_AQ_monitor_locations$name), ", ", as.character(CDPH_AQ_monitor_locations$addresses)), 
-                   radius = 0.5, 
-                   color = ifelse(!is.na(CDPH_AQ_monitor_locations$pm_2_5) | !is.na(CDPH_AQ_monitor_locations$pm_2_5_s),CLE_VALUES_COLORS[2],CLE_VALUES_COLORS[1]), 
-                   opacity=0.9,
-                   group = GRAPH_LAYERS[2]) %>%
+  addMarkers(lng=CDPH_AQ_monitor_locations$long, 
+            lat=CDPH_AQ_monitor_locations$lat,
+            popup = paste(as.character(CDPH_AQ_monitor_locations$name), ", ", as.character(CDPH_AQ_monitor_locations$addresses)), 
+            icon= icons(
+              iconUrl = ifelse(!is.na(CDPH_AQ_monitor_locations$pm_2_5) | !is.na(CDPH_AQ_monitor_locations$pm_2_5_s),
+                               'triangle-blue.png',
+                               'triangle-black.png'
+              ),
+              iconAnchorX = 5, iconAnchorY = 5,
+              iconWidth = 10, iconHeight = 10
+            ),
+            group = GRAPH_LAYERS[2]) %>%
   
   # Our Potential Sensors
-  addLegend(pal=our_monitor_pal,
-            values = OUR_VALUES,
-            position = "bottomleft",
-            title = "Organization:",
-            group = GRAPH_LAYERS[3]) %>%
-  addCircleMarkers(lng=sensor_deployment_potential_sites$long, 
-                   lat=sensor_deployment_potential_sites$lat, 
-                   popup = paste(as.character(sensor_deployment_potential_sites$name), ", ", as.character(sensor_deployment_potential_sites$addresses)), 
+  # IOTC Sensors
+  addCircleMarkers(lng=IOTC_sensors$long, 
+                   lat=IOTC_sensors$lat, 
+                   popup = paste(as.character(IOTC_sensors$name), ", ", as.character(IOTC_sensors$addresses)), 
                    radius = 0.5, 
-                   color = sensor_deployment_potential_sites$color, 
+                   color = IOTC_sensors$color, 
                    opacity=0.9,
                    group = GRAPH_LAYERS[3]) %>%
+  # Potential CPL
+  addCircleMarkers(lng=potential_CPL$long, 
+                   lat=potential_CPL$lat, 
+                   popup = paste(as.character(potential_CPL$name), ", ", as.character(potential_CPL$addresses)), 
+                   radius = 0.5, 
+                   color = potential_CPL$color, 
+                   opacity=0.9,
+                   group = GRAPH_LAYERS[4]) %>%
+  
+  # Potential CCPL
+  addCircleMarkers(lng=potential_CCPL$long, 
+                   lat=potential_CCPL$lat, 
+                   popup = paste(as.character(potential_CCPL$name), ", ", as.character(potential_CCPL$addresses)), 
+                   radius = 0.5, 
+                   color = potential_CCPL$color, 
+                   opacity=0.9,
+                   group = GRAPH_LAYERS[5]) %>%
   
   # Scale
   addScaleBar(position = "topleft") %>%

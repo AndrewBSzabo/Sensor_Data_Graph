@@ -1,9 +1,9 @@
 ,50,,,,
 Row Number,Location,Zip Code,Street Address,Selected Site,
-1,CWRU,44106,10900 Euclid Avenue,FALSE,
-2,CSU,44115,2121 Euclid Avenue,FALSE,
-3,DigitalC,44103,6815 Euclid Avenue,FALSE,
-4,Great Lakes Science Center,44114,601 Erieside Avenue,FALSE,
+1,CWRU,44106,10900 Euclid Avenue,TRUE,
+2,CSU,44115,2121 Euclid Avenue,TRUE,
+3,DigitalC,44103,6815 Euclid Avenue,TRUE,
+4,Great Lakes Science Center,44114,601 Erieside Avenue,TRUE,
 5,CDPH-DAQ - continuous monitor site,44115,2650 E 14th Street,TRUE,
 6,CDPH-DAQ - continuous monitor site,44128,25609 Emery Road,TRUE,
 7,County Library - Bay Village,44140,502 Cahoon Road,FALSE,https://www.cuyahogalibrary.org/Branches.aspx
