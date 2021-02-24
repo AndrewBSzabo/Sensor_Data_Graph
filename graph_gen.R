@@ -8,19 +8,20 @@ library(DT)
 library(tidygeocoder)
 
 # ----------- COVID DATA BY ZIP -----------
-covid_data_by_zip_oh <- read_csv("OH COVID Zip Codes 113020 v2 - COVIDSummaryDataZIP.csv", 
-                                                             col_types = cols(`Zip Code` = col_character(), 
-                                                                              Population = col_number(), `Case Count - Cumulative` = col_number(), 
-                                                                              `Case Count - Last 30 Days` = col_number(), 
-                                                                              `Case Count - Last 14 Days` = col_number(), 
-                                                                              `Case Count Per 100K - Cumulative` = col_number(), 
-                                                                              `Case Count Per 100K - Last 30 Days` = col_number(), 
-                                                                              `Case Count Per 100K - Last 14 Days` = col_number()))
+COVID_DATA_PATH <- "Covid Data/Date 02_22_2021.csv"
+covid_data_by_zip_oh <- read_csv(COVID_DATA_PATH, 
+                                 col_types = cols(`Zip Code` = col_character(), 
+                                                  Population = col_number(), `Case Count - Cumulative` = col_number(), 
+                                                  `Case Count - Last 30 Days` = col_number(), 
+                                                  `Case Count - Last 14 Days` = col_number(), 
+                                                  `Case Count Per 100K - Cumulative` = col_number(), 
+                                                  `Case Count Per 100K - Last 30 Days` = col_number(), 
+                                                  `Case Count Per 100K - Last 14 Days` = col_number()))
 
-colnames(covid_data_by_zip_oh) <- c("y_n","zip","pop","cc_cum","cc_30","cc_14","cc_100_cum","cc_100_30","cc_100_14", "city")
+colnames(covid_data_by_zip_oh) <- c("y_n","zip","pop","cc_cum","cc_30","cc_14","cc_100_cum","cc_100_30","cc_100_14")
 
-covid_data_by_zip_greater_cle <- filter(covid_data_by_zip_oh, y_n == "Y") %>%
-  select(zip,cc_100_cum)
+covid_data_by_zip_greater_cle <- select(covid_data_by_zip_oh,zip,cc_100_cum) #filter(covid_data_by_zip_oh, y_n == "Y") %>%
+  
 
 # starts_with=44 to simplify dataset to zips around cleveland
 zip_geo_oh <- zctas(cb = TRUE, state='OH', year=2019, starts_with="44")
@@ -87,7 +88,7 @@ potential_CPL <- subset(sensor_deployment_potential_sites,color==POTENTIAL_COLOR
 
 GRAPH_LAYERS = c("Covid Data","CDPH-DAQ Monitoring","IOTC Sensors", "Potential CPL", "Potential CCPL")
 
-covid_pal <- colorNumeric("Reds", covid_and_geo$cc_100_cum)
+covid_pal <- colorNumeric(palette = "Reds", domain = covid_and_geo$cc_100_cum)
 cle_monitor_pal <- colorFactor(CLE_VALUES_COLORS, CLE_VALUES, ordered=T)
 
 popup <- paste0("zip: ", as.character(covid_and_geo$zip), "; value: ", as.character(covid_and_geo$cc_100_cum))
@@ -97,7 +98,7 @@ leaflet() %>%
   
   # Covid Data
   addPolygons(data = covid_and_geo, 
-              fillColor = ~pal(covid_and_geo$cc_100_cum), 
+              fillColor = ~covid_pal(covid_and_geo$cc_100_cum), 
               fillOpacity = 0.7, 
               weight = 0.2, 
               smoothFactor = 0.2, 
@@ -106,7 +107,7 @@ leaflet() %>%
   addLegend(pal = covid_pal, 
             values = covid_and_geo$cc_100_cum, 
             position = "topright", 
-            title = "Covid Case Per 100K - Cumulative:",
+            title = paste("Covid Case Per 100K "," (02/22/2021):"),
             group = GRAPH_LAYERS[1]) %>%
   
   # Cleveland Sensors
